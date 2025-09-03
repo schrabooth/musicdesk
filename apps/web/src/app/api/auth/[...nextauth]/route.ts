@@ -7,7 +7,7 @@ import { prisma } from '@musicdesk/database'
 import bcrypt from 'bcryptjs'
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  // Remove adapter for JWT sessions
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -63,7 +63,7 @@ const handler = NextAuth({
     })
   ],
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
   },
   pages: {
     signIn: '/auth/signin',
@@ -71,19 +71,22 @@ const handler = NextAuth({
     error: '/auth/error',
   },
   callbacks: {
-    async session({ session, user }) {
-      // Add user ID and role to session
-      if (session.user) {
-        session.user.id = user.id
-        session.user.role = (user as any).role || 'USER'
+    async jwt({ token, user }) {
+      // Add user info to JWT token
+      if (user) {
+        token.id = user.id
+        token.role = (user as any).role || 'USER'
+      }
+      return token
+    },
+    async session({ session, token }) {
+      // Add user info to session from JWT
+      if (session.user && token) {
+        session.user.id = token.id as string
+        session.user.role = token.role as string
       }
       return session
     },
-    async signIn({ user, account, profile }) {
-      // Allow all sign-ins for now
-      // Add custom logic here if needed
-      return true
-    }
   },
   events: {
     async createUser({ user }) {
