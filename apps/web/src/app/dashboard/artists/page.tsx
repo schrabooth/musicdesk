@@ -220,8 +220,25 @@ export default function ArtistsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredArtists.map((artist) => (
-              <ArtistCard key={artist.id} artist={artist} />
+            {filteredArtists.map((artist: Artist) => (
+              <ArtistCard
+                key={artist.id}
+                artist={{
+                  id: artist.id,
+                  name: artist.name,
+                  slug: artist.slug,
+                  verified: artist.verified,
+                  avatar: artist.avatar || null,
+                  genres: artist.genres,
+                  spotifyId: artist.spotifyId || null,
+                  appleMusicId: artist.appleMusicId || null,
+                  _count: {
+                    tracks: artist._count.tracks,
+                    releases: artist._count.releases,
+                    royalties: artist._count.royalties,
+                  },
+                }}
+              />
             ))}
           </div>
         )}
