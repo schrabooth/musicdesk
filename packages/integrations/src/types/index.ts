@@ -22,7 +22,7 @@ export interface Artist {
   genres?: string[]
   followers?: number
   verified?: boolean
-  externalUrls?: Record<string, string>
+  externalUrls?: any
 }
 
 export interface Track {
@@ -33,7 +33,7 @@ export interface Track {
   duration?: number
   popularity?: number
   playCount?: number
-  externalUrls?: Record<string, string>
+  externalUrls?: any
 }
 
 export interface Analytics {
