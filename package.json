@@ -1,0 +1,55 @@
+{
+  "name": "musicdesk",
+  "version": "0.1.0",
+  "description": "The Open-Source Music Business Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
+    "db:studio": "turbo run db:studio",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "install:all": "pnpm install"
+  },
+  "packageManager": "pnpm@9.1.4",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schrabooth/musicdesk.git"
+  },
+  "keywords": [
+    "music",
+    "distribution",
+    "analytics",
+    "royalties",
+    "streaming",
+    "open-source",
+    "artists",
+    "indie-music"
+  ],
+  "author": "MusicDesk Contributors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/schrabooth/musicdesk/issues"
+  },
+  "homepage": "https://github.com/schrabooth/musicdesk"
+}

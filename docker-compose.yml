@@ -1,0 +1,109 @@
+# Modern Docker Compose (no version needed)
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: musicdesk-postgres
+    environment:
+      POSTGRES_USER: daniel
+      POSTGRES_PASSWORD: ""
+      POSTGRES_DB: musicdesk
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daniel -d musicdesk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions (optional - not used yet)
+  redis:
+    image: redis:7-alpine
+    container_name: musicdesk-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - "full"  # Only start with --profile full
+
+  # Main MusicDesk Application (Development)
+  web:
+    image: node:20-alpine
+    container_name: musicdesk-web
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://daniel:@postgres:5432/musicdesk
+      DIRECT_URL: postgresql://daniel:@postgres:5432/musicdesk
+      
+      
+      # Application
+      NODE_ENV: development
+      NEXTAUTH_SECRET: dev-secret-key-change-in-production
+      NEXTAUTH_URL: http://localhost:3000
+      
+      # Platform Integration Secrets (add your own)
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      
+      # For Apple Music (if needed)
+      APPLE_ARTISTS_EMAIL: ${APPLE_ARTISTS_EMAIL:-}
+      APPLE_ARTISTS_PASSWORD: ${APPLE_ARTISTS_PASSWORD:-}
+      
+      # For DistroKid (if needed)
+      DISTROKID_ROSTER_EMAIL: ${DISTROKID_ROSTER_EMAIL:-}
+      DISTROKID_ROSTER_PASSWORD: ${DISTROKID_ROSTER_PASSWORD:-}
+      
+      # Twilio (for 2FA)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: >
+      sh -c "
+        apk add --no-cache libc6-compat &&
+        npm install -g pnpm &&
+        pnpm install &&
+        cd packages/database &&
+        pnpm prisma db push &&
+        pnpm run db:seed &&
+        cd ../../apps/web &&
+        pnpm dev --hostname 0.0.0.0
+      "
+
+  # Background Worker (future - disabled for now)
+  worker:
+    image: node:20-alpine
+    container_name: musicdesk-worker
+    command: echo "Worker service not implemented yet"
+    profiles:
+      - "workers"  # Only start with --profile workers
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: musicdesk-network

@@ -1,0 +1,40 @@
+{
+  "name": "@musicdesk/integrations",
+  "version": "0.1.0",
+  "description": "Platform integrations for Spotify, Apple Music, DistroKid, etc.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/spotify-web-api-node": "^5.0.11",
+    "axios": "^1.6.0",
+    "puppeteer": "^21.0.0",
+    "spotify-web-api-node": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./spotify": {
+      "types": "./dist/spotify/index.d.ts",
+      "default": "./dist/spotify/index.js"
+    },
+    "./apple": {
+      "types": "./dist/apple/index.d.ts",
+      "default": "./dist/apple/index.js"
+    },
+    "./distrokid": {
+      "types": "./dist/distrokid/index.d.ts",
+      "default": "./dist/distrokid/index.js"
+    }
+  }
+}

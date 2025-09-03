@@ -1,0 +1,496 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER & ORGANIZATION MODELS
+// ============================================================================
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String?
+  avatar           String?
+  password         String?  // For credentials auth (null for OAuth users)
+  emailVerified    Boolean  @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  role             Role     @default(USER)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts     Account[]
+  sessions     Session[]
+  artists      UserArtist[]
+  organizations OrganizationMember[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model Organization {
+  id       String @id @default(cuid())
+  name     String
+  slug     String @unique
+  avatar   String?
+  plan     Plan   @default(FREE)
+  settings Json   @default("{}")
+  
+  // Timestamps  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  members OrganizationMember[]
+  artists Artist[]
+  
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole        @default(MEMBER)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+// ============================================================================
+// ARTIST & MUSIC MODELS
+// ============================================================================
+
+model Artist {
+  id             String  @id @default(cuid())
+  name           String
+  slug           String  @unique
+  bio            String?
+  avatar         String?
+  verified       Boolean @default(false)
+  organizationId String
+  
+  // External IDs
+  spotifyId      String? @unique
+  appleMusicId   String? @unique
+  amiIdentity    String? @unique // Apple Music Identity
+  
+  // Metadata
+  genres         String[]
+  socialLinks    Json     @default("{}")
+  metadata       Json     @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  users        UserArtist[]
+  platforms    Platform[]
+  tracks       Track[]
+  releases     Release[]
+  analytics    Analytics[]
+  royalties    Royalty[]
+  
+  @@index([name])
+  @@index([verified])
+  @@map("artists")
+}
+
+model UserArtist {
+  id       String    @id @default(cuid())
+  userId   String
+  artistId String
+  role     ArtistRole @default(VIEWER)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistId])
+  @@map("user_artists")
+}
+
+model Platform {
+  id          String       @id @default(cuid())
+  type        PlatformType
+  artistId    String
+  externalId  String       // Platform-specific ID
+  credentials String?      @db.Text // Encrypted JSON
+  lastSync    DateTime?
+  status      SyncStatus   @default(PENDING)
+  metadata    Json         @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([type, externalId])
+  @@index([artistId])
+  @@index([status])
+  @@map("platforms")
+}
+
+model Track {
+  id          String  @id @default(cuid())
+  title       String
+  artistId    String
+  releaseId   String?
+  isrc        String? @unique
+  duration    Int?    // in milliseconds
+  trackNumber Int?
+  explicit    Boolean @default(false)
+  
+  // External IDs
+  spotifyId     String? @unique
+  appleMusicId  String? @unique
+  
+  // File info
+  audioUrl      String?
+  waveformUrl   String?
+  
+  // Metadata
+  genres        String[]
+  metadata      Json     @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artist    Artist    @relation(fields: [artistId], references: [id])
+  release   Release?  @relation(fields: [releaseId], references: [id])
+  royalties Royalty[]
+  
+  @@index([artistId])
+  @@index([isrc])
+  @@map("tracks")
+}
+
+model Release {
+  id            String      @id @default(cuid())
+  title         String
+  artistId      String
+  upc           String?     @unique
+  releaseType   ReleaseType @default(SINGLE)
+  releaseDate   DateTime?
+  status        ReleaseStatus @default(DRAFT)
+  
+  // Artwork
+  coverArt      String?
+  
+  // Distribution
+  distributionId String?     @unique
+  
+  // Metadata
+  label         String?
+  copyright     String?
+  genre         String?
+  metadata      Json        @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artist       Artist              @relation(fields: [artistId], references: [id])
+  tracks       Track[]
+  distribution Distribution?
+  stores       ReleaseStore[]
+  
+  @@index([artistId])
+  @@index([status])
+  @@map("releases")
+}
+
+model Distribution {
+  id        String              @id @default(cuid())
+  releaseId String              @unique
+  provider  DistributionProvider @default(NUEMETA)
+  externalId String?
+  status    DistributionStatus  @default(PENDING)
+  metadata  Json                @default("{}")
+  
+  // Timestamps
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  release Release @relation(fields: [releaseId], references: [id])
+  
+  @@index([status])
+  @@map("distributions")
+}
+
+model ReleaseStore {
+  id          String      @id @default(cuid())
+  releaseId   String
+  store       Store
+  status      StoreStatus @default(PENDING)
+  storeUrl    String?
+  goLiveDate  DateTime?
+  metadata    Json        @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  release Release @relation(fields: [releaseId], references: [id])
+
+  @@unique([releaseId, store])
+  @@index([status])
+  @@map("release_stores")
+}
+
+// ============================================================================
+// ANALYTICS & ROYALTIES
+// ============================================================================
+
+model Analytics {
+  id       String   @id @default(cuid())
+  artistId String
+  date     DateTime
+  source   PlatformType
+  
+  // Metrics
+  streams    Int @default(0)
+  listeners  Int @default(0)
+  followers  Int @default(0)
+  saves      Int @default(0)
+  
+  // Geographic data
+  countries  Json @default("{}")
+  
+  // Additional data
+  metadata   Json @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artist Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([artistId, date, source])
+  @@index([date])
+  @@map("analytics")
+}
+
+model Royalty {
+  id            String       @id @default(cuid())
+  trackId       String?
+  artistId      String
+  source        String       // Platform/PRO/MLC name
+  type          RoyaltyType
+  amount        Decimal      @db.Decimal(10, 4)
+  currency      String       @default("USD")
+  period        DateTime     // Period this royalty is for
+  reportedAt    DateTime     // When it was reported
+  status        RoyaltyStatus @default(UNCLAIMED)
+  
+  // Claim information
+  claimedAt     DateTime?
+  paidAt        DateTime?
+  claimDetails  Json?
+  
+  // Additional data
+  territory     String?      // Country/region
+  metadata      Json         @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artist Artist @relation(fields: [artistId], references: [id])
+  track  Track? @relation(fields: [trackId], references: [id])
+
+  @@index([artistId, period])
+  @@index([status])
+  @@index([type])
+  @@map("royalties")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  USER
+  ADMIN
+  DEVELOPER
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ArtistRole {
+  OWNER
+  MANAGER
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+  SELF_HOSTED
+}
+
+enum PlatformType {
+  SPOTIFY
+  APPLE_MUSIC
+  DISTROKID
+  AMAZON_MUSIC
+  YOUTUBE_MUSIC
+  SOUNDCLOUD
+  TIDAL
+  DEEZER
+  PANDORA
+  CUSTOM
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SYNCED
+  ERROR
+  DISABLED
+}
+
+enum ReleaseType {
+  SINGLE
+  EP
+  ALBUM
+  COMPILATION
+}
+
+enum ReleaseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  DISTRIBUTED
+  LIVE
+  REJECTED
+}
+
+enum DistributionProvider {
+  NUEMETA
+  CD_BABY
+  DISTROKID
+  TUNECORE
+  CUSTOM
+}
+
+enum DistributionStatus {
+  PENDING
+  PROCESSING
+  DISTRIBUTED
+  LIVE
+  ERROR
+  REJECTED
+}
+
+enum Store {
+  SPOTIFY
+  APPLE_MUSIC
+  AMAZON_MUSIC
+  YOUTUBE_MUSIC
+  TIDAL
+  DEEZER
+  PANDORA
+  SOUNDCLOUD
+  BANDCAMP
+  BEATPORT
+  // Add more stores as needed
+}
+
+enum StoreStatus {
+  PENDING
+  PROCESSING
+  LIVE
+  ERROR
+  REJECTED
+  REMOVED
+}
+
+enum RoyaltyType {
+  MECHANICAL
+  PERFORMANCE
+  SYNCHRONIZATION
+  MASTER
+  NEIGHBORING_RIGHTS
+  DIGITAL_PERFORMANCE
+}
+
+enum RoyaltyStatus {
+  UNCLAIMED
+  PENDING
+  CLAIMED
+  PAID
+  DISPUTED
+  REJECTED
+}
