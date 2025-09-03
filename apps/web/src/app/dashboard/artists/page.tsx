@@ -23,6 +23,7 @@ interface Artist {
 export default function ArtistsPage() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'verified' | 'unverified'>(
     'all'
@@ -39,9 +40,12 @@ export default function ArtistsPage() {
 
       if (data.success) {
         setArtists(data.data);
+      } else {
+        setError(data.error || 'Failed to fetch artists');
       }
     } catch (err) {
       console.error('Error fetching artists:', err);
+      setError('Error connecting to API');
     } finally {
       setLoading(false);
     }
