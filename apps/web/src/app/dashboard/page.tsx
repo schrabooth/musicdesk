@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import ArtistCard from '@/components/dashboard/ArtistCard'
-import MetricsGrid, { defaultMusicMetrics } from '@/components/analytics/MetricsGrid'
+import MetricsGrid, { useMetricsData, fallbackMetrics } from '@/components/analytics/MetricsGrid'
 
 interface Artist {
   id: string
@@ -25,6 +25,9 @@ export default function DashboardPage() {
   const [artists, setArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  
+  // Fetch real metrics data
+  const { metrics, loading: metricsLoading } = useMetricsData()
 
   useEffect(() => {
     fetchArtists()
@@ -124,7 +127,23 @@ export default function DashboardPage() {
           {/* Metrics Overview */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Platform Overview</h2>
-            <MetricsGrid metrics={defaultMusicMetrics} />
+            {metricsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg p-6 shadow-sm border animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                        <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      </div>
+                      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <MetricsGrid metrics={metrics.length > 0 ? metrics : fallbackMetrics} />
+            )}
           </div>
 
           {/* Artists Section */}

@@ -104,36 +104,64 @@ export default function MetricsGrid({ metrics }: MetricsGridProps) {
   )
 }
 
-// Example usage with common music industry metrics
-export const defaultMusicMetrics: Metric[] = [
+// Hook to fetch real metrics data
+import { useEffect, useState } from 'react'
+
+export function useMetricsData() {
+  const [metrics, setMetrics] = useState<Metric[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchMetrics()
+  }, [])
+
+  const fetchMetrics = async () => {
+    try {
+      const response = await fetch('/api/metrics/overview')
+      const data = await response.json()
+      
+      if (data.success) {
+        setMetrics(data.data.metrics)
+      } else {
+        setError(data.error || 'Failed to fetch metrics')
+      }
+    } catch (err) {
+      setError('Error loading metrics')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { metrics, loading, error, refetch: fetchMetrics }
+}
+
+// Fallback metrics for when data is loading
+export const fallbackMetrics: Metric[] = [
   {
     label: 'Total Streams',
-    value: 1250000,
-    previousValue: 980000,
+    value: 0,
     format: 'number',
     icon: '🎵',
     color: 'purple',
   },
   {
     label: 'Monthly Listeners',
-    value: 45600,
-    previousValue: 38200,
+    value: 0,
     format: 'number',
     icon: '👥',
     color: 'blue',
   },
   {
     label: 'Total Earnings',
-    value: 4250.75,
-    previousValue: 3890.20,
+    value: 0,
     format: 'currency',
     icon: '💰',
     color: 'green',
   },
   {
     label: 'Engagement Rate',
-    value: 12.4,
-    previousValue: 10.8,
+    value: 0,
     format: 'percentage',
     icon: '📈',
     color: 'orange',
