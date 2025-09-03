@@ -9,6 +9,7 @@ export interface Artist {
   spotifyId?: string | null
   appleMusicId?: string | null
   amiIdentity?: string | null
+  metadata?: any
   createdAt: string
   updatedAt: string
   _count: {
@@ -31,6 +32,7 @@ export interface Platform {
   type: 'SPOTIFY' | 'APPLE_MUSIC' | 'DISTROKID'
   status: 'PENDING' | 'SYNCED' | 'ERROR'
   lastSync?: string
+  metadata?: any
 }
 
 export interface Track {
@@ -54,6 +56,7 @@ export interface Release {
 }
 
 export interface Analytics {
+  id: string
   date: string
   streams: number
   listeners: number
@@ -61,6 +64,7 @@ export interface Analytics {
   saves: number
   source: 'SPOTIFY' | 'APPLE_MUSIC'
   territory?: string
+  countries?: any
 }
 
 export interface UnclaimedRoyalty {
@@ -74,5 +78,19 @@ export interface UnclaimedRoyalty {
     id: string
     title: string
     isrc?: string
+  }
+}
+
+export interface SpotifySearchResult {
+  platform: 'SPOTIFY'
+  externalId: string
+  name: string
+  image?: string
+  genres: string[]
+  followers: number
+  verified: boolean
+  confidence: number
+  externalUrls?: {
+    spotify: string
   }
 }

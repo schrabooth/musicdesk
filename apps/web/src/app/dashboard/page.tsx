@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import ArtistCard from '@/components/dashboard/ArtistCard'
 import MetricsGrid, { useMetricsData, fallbackMetrics } from '@/components/analytics/MetricsGrid'
@@ -22,12 +23,27 @@ interface Artist {
 }
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession()
   const [artists, setArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
   // Fetch real metrics data
   const { metrics, loading: metricsLoading } = useMetricsData()
+
+  // Redirect to signin if not authenticated
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
+    window.location.href = '/auth/signin'
+    return null
+  }
 
   useEffect(() => {
     fetchArtists()
@@ -88,12 +104,15 @@ export default function DashboardPage() {
               </nav>
             </div>
             <div className="flex items-center gap-4">
-              <Link
-                href="/api/auth/signout"
+              <span className="text-sm text-gray-600">
+                Welcome, {session?.user?.name || session?.user?.email}
+              </span>
+              <button
+                onClick={() => signOut()}
                 className="text-gray-500 hover:text-gray-700 text-sm"
               >
                 Sign Out
-              </Link>
+              </button>
             </div>
           </div>
         </div>

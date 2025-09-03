@@ -11,9 +11,13 @@ interface Artist {
   slug: string;
   verified: boolean;
   avatar?: string;
+  bio?: string;
   genres: string[];
   spotifyId?: string;
   appleMusicId?: string;
+  metadata?: any;
+  createdAt?: string;
+  updatedAt?: string;
   _count: {
     tracks: number;
     releases: number;
