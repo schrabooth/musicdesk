@@ -7,9 +7,23 @@ import { prisma, createOrUpdateArtist } from '@musicdesk/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    // For now, we'll return all artists
-    // In production, this should be filtered by user authentication
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId') // In production, get from session
+    
+    // Filter artists by user relationships
+    const whereClause = userId ? {
+      users: {
+        some: {
+          userId: userId
+        }
+      }
+    } : {
+      // Development mode: show artists from default organization only
+      organizationId: 'cmf3gu8qq00019mmqdmnwhv7x'
+    }
+    
     const artists = await prisma.artist.findMany({
+      where: whereClause,
       select: {
         id: true,
         name: true,

@@ -1,10 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: {
-      root: process.cwd(),
-    }
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+        pathname: '/image/**',
+      },
+      {
+        protocol: 'https',  
+        hostname: 'is*.mzstatic.com',
+        pathname: '/**',
+      }
+    ],
   },
   transpilePackages: ['@musicdesk/database', '@musicdesk/integrations', '@musicdesk/utils']
 };
