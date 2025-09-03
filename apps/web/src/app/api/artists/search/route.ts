@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
                     .replace(/[^a-z0-9]+/g, '-')
                     .replace(/(^-|-$)/g, ''),
                   organizationId,
+                  avatar: result.image, // Save Spotify image
                   spotifyId:
                     result.platform === 'SPOTIFY'
                       ? result.externalId
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
                     searchResult: true,
                     platform: result.platform,
                     confidence: result.confidence,
+                    followers: result.followers,
                     importedAt: new Date().toISOString(),
                   },
                 },
@@ -118,6 +120,9 @@ export async function GET(request: NextRequest) {
               const updateData: any = {};
               if (result.platform === 'SPOTIFY' && !existingArtist.spotifyId) {
                 updateData.spotifyId = result.externalId;
+              }
+              if (!existingArtist.avatar && result.image) {
+                updateData.avatar = result.image; // Add missing avatar
               }
               if (Object.keys(updateData).length > 0) {
                 await prisma.artist.update({
