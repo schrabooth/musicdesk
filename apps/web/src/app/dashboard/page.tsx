@@ -31,19 +31,17 @@ export default function DashboardPage() {
   // Fetch real metrics data
   const { metrics, loading: metricsLoading } = useMetricsData()
 
-  // Redirect to signin if not authenticated
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    )
-  }
-
-  if (status === 'unauthenticated') {
-    window.location.href = '/auth/signin'
-    return null
-  }
+  // Development mode - skip authentication for now
+  // In production, uncomment authentication guards
+  // if (status === 'loading') {
+  //   return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+  //   </div>
+  // }
+  // if (status === 'unauthenticated') {
+  //   window.location.href = '/auth/signin'
+  //   return null
+  // }
 
   useEffect(() => {
     fetchArtists()
@@ -105,14 +103,14 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                Welcome, {session?.user?.name || session?.user?.email}
+                Welcome, {session?.user?.name || session?.user?.email || 'Demo User'}
               </span>
-              <button
-                onClick={() => signOut()}
+              <Link
+                href="/auth/signin"
                 className="text-gray-500 hover:text-gray-700 text-sm"
               >
-                Sign Out
-              </button>
+                {session?.user ? 'Account' : 'Sign In'}
+              </Link>
             </div>
           </div>
         </div>
