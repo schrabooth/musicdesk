@@ -106,14 +106,31 @@ export async function GET(request: NextRequest) {
     const totalSpotifyArtists = platformStats.find(p => p.type === 'SPOTIFY')?._count || 0
     const totalPlatformConnections = platformStats.reduce((sum, p) => sum + p._count, 0)
 
+    // Count claimed vs unclaimed artists
+    const claimedArtists = await prisma.artist.count({
+      where: {
+        users: {
+          some: {}
+        }
+      }
+    })
+
     const metrics = [
       {
         label: 'Total Artists',
         value: artistCount,
-        previousValue: Math.max(0, artistCount - 5), // Simulate previous growth
+        previousValue: Math.max(0, artistCount - 5),
         format: 'number' as const,
         icon: '🎤',
         color: 'purple' as const,
+      },
+      {
+        label: 'Claimed Artists',
+        value: claimedArtists,
+        previousValue: Math.max(0, claimedArtists - 1),
+        format: 'number' as const,
+        icon: '✅',
+        color: 'green' as const,
       },
       {
         label: 'Platform Connections',
